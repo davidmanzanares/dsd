@@ -20,20 +20,6 @@ type S3 struct {
 	region string
 }
 
-func parseURL(s string) (bucket string, key string, err error) {
-	if !strings.HasPrefix(s, "s3://") {
-		return "", "", fmt.Errorf("S3 service must begin with s3://, not with %s", s)
-	}
-	s = s[len("s3://"):]
-	parts := strings.SplitN(s, "/", 2)
-	if len(parts) == 1 {
-		parts = append(parts, "/")
-	}
-	bucket = parts[0]
-	key = parts[1]
-	return bucket, key, err
-}
-
 func Create(service string) (provider.Provider, error) {
 	bucket, _, err := parseURL(service)
 	if err != nil {
@@ -47,7 +33,29 @@ func Create(service string) (provider.Provider, error) {
 }
 
 func (s *S3) GetAsset(name string, writer io.Writer) error {
-	bucket, key, err := parseURL(s.path + "/" + name)
+	return s.get(s.path+"/"+name, writer)
+}
+
+func (s *S3) PushAsset(name string, reader io.Reader) error {
+	return s.push("/assets/"+name, reader)
+}
+
+func (s *S3) GetCurrentVersion() (provider.Version, error) {
+	buffer := bytes.NewBuffer(nil)
+	s.get(s.path+"/VERSION", buffer)
+	return provider.UnserializeVersion(buffer.Bytes())
+}
+
+func (s *S3) PushVersion(v provider.Version) error {
+	buff, err := v.Serialize()
+	if err != nil {
+		return err
+	}
+	return s.push("/VERSION", bytes.NewReader(buff))
+}
+
+func (s *S3) get(path string, writer io.Writer) error {
+	bucket, key, err := parseURL(path)
 	if err != nil {
 		return err
 	}
@@ -67,10 +75,6 @@ func (s *S3) GetAsset(name string, writer io.Writer) error {
 	writer.Write(buff.Bytes())
 
 	return nil
-}
-
-func (s *S3) PushAsset(name string, reader io.Reader) error {
-	return s.push("/assets/"+name, reader)
 }
 
 func (s *S3) push(name string, reader io.Reader) error {
@@ -97,10 +101,16 @@ func (s *S3) push(name string, reader io.Reader) error {
 	return nil
 }
 
-func (s *S3) PushVersion(v provider.Version) error {
-	buff, err := v.Serialize()
-	if err != nil {
-		return err
+func parseURL(s string) (bucket string, key string, err error) {
+	if !strings.HasPrefix(s, "s3://") {
+		return "", "", fmt.Errorf("S3 service must begin with s3://, not with %s", s)
 	}
-	return s.push("VERSION", bytes.NewReader(buff))
+	s = s[len("s3://"):]
+	parts := strings.SplitN(s, "/", 2)
+	if len(parts) == 1 {
+		parts = append(parts, "/")
+	}
+	bucket = parts[0]
+	key = parts[1]
+	return bucket, key, err
 }

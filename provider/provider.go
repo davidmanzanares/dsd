@@ -11,6 +11,7 @@ type Provider interface {
 	PushAsset(name string, reader io.Reader) error
 
 	PushVersion(v Version) error
+	GetCurrentVersion() (Version, error)
 }
 
 type Version struct {
