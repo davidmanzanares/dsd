@@ -84,15 +84,25 @@ func main() {
 	}
 	rootCmd.AddCommand(cmdDeploy)
 
+	cmdDownload := &cobra.Command{
+		Use:   "download <service>",
+		Short: "Downloads the current deployment on <service>",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			err := Download(args[0])
+			if err != nil {
+				log.Fatalln(err)
+			}
+		},
+	}
+	rootCmd.AddCommand(cmdDownload)
+
 	cmdWatch := &cobra.Command{
 		Use:   "watch <service>",
 		Short: "Get <service> deployments, deploying the existing and new deployments",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			err := Watch(args[0])
-			if err != nil {
-				log.Fatalln(err)
-			}
+			Watch(args[0])
 		},
 	}
 	rootCmd.AddCommand(cmdWatch)
@@ -171,7 +181,35 @@ func Publish(target Target) error {
 	return p.PushVersion(provider.Version{Name: uid, Time: time.Now()})
 }
 
-func Watch(service string) error {
+func Watch(service string) {
+	p, err := s3.Create(service)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var currentVersion provider.Version
+	for {
+		v, err := p.GetCurrentVersion()
+		if err != nil {
+			log.Println(err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		if v == currentVersion {
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		err = download(p, v)
+		if err != nil {
+			log.Println(err)
+		} else {
+			currentVersion = v
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func Download(service string) error {
 	p, err := s3.Create(service)
 	if err != nil {
 		return err
@@ -181,7 +219,10 @@ func Watch(service string) error {
 	if err != nil {
 		return err
 	}
+	return download(p, v)
+}
 
+func download(p provider.Provider, v provider.Version) error {
 	gzipInput, s3Output := io.Pipe()
 	var barrier sync.WaitGroup
 	barrier.Add(1)
