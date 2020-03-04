@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -33,7 +32,7 @@ func Create(service string) (provider.Provider, error) {
 }
 
 func (s *S3) GetAsset(name string, writer io.Writer) error {
-	return s.get(s.path+"/"+name, writer)
+	return s.get("/assets/"+name, writer)
 }
 
 func (s *S3) PushAsset(name string, reader io.Reader) error {
@@ -42,7 +41,7 @@ func (s *S3) PushAsset(name string, reader io.Reader) error {
 
 func (s *S3) GetCurrentVersion() (provider.Version, error) {
 	buffer := bytes.NewBuffer(nil)
-	s.get(s.path+"/VERSION", buffer)
+	s.get("/VERSION", buffer)
 	return provider.UnserializeVersion(buffer.Bytes())
 }
 
@@ -55,7 +54,8 @@ func (s *S3) PushVersion(v provider.Version) error {
 }
 
 func (s *S3) get(path string, writer io.Writer) error {
-	bucket, key, err := parseURL(path)
+	bucket, key, err := parseURL(s.path + path)
+	fmt.Println(path)
 	if err != nil {
 		return err
 	}
@@ -86,8 +86,6 @@ func (s *S3) push(name string, reader io.Reader) error {
 	sess, _ := session.NewSession(&aws.Config{Region: aws.String(s.region)})
 
 	uploader := s3manager.NewUploader(sess)
-
-	log.Println(bucket, " a  ", key)
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),

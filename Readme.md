@@ -12,7 +12,7 @@ Added "dev" (s3://mydeploybucket/dev) {"myAwesomeBinary"}
 
 ## Deploying
 ```
-$ dsd dev
+$ dsd deploy dev
 Deployed [eb08c683f2c4fba93b31afaac77f9bc556e2a0bf] to "dev" (s3://mydeploybucket/dev) {"myAwesomeBinary"}
 ```
 
