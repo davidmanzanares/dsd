@@ -3,6 +3,7 @@
 		"dev": {
 			"Service": "s3://dsd-s3-test/manual",
 			"Patterns": [
+				"dsd",
 				"*.go"
 			]
 		}

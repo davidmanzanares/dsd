@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -75,11 +76,10 @@ func main() {
 				fmt.Printf("Target \"%s\" doesn't exist\n", args[0])
 			}
 			fmt.Println("Deploying to", target)
-			err := Publish(*target)
+			err := Deploy(*target)
 			if err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Deployed")
 		},
 	}
 	rootCmd.AddCommand(cmdDeploy)
@@ -110,7 +110,7 @@ func main() {
 	rootCmd.Execute()
 }
 
-func Publish(target Target) error {
+func Deploy(target Target) error {
 	p, err := s3.Create(target.Service)
 	if err != nil {
 		return err
@@ -132,6 +132,7 @@ func Publish(target Target) error {
 		pushError = p.PushAsset(uid+".tar.gz", providerInput)
 		barrier.Done()
 	}()
+	numExecutables := 0
 	for _, p := range target.Patterns {
 		matches, err := filepath.Glob(p)
 		if err != nil {
@@ -143,10 +144,15 @@ func Publish(target Target) error {
 				log.Println(err)
 				continue
 			}
+			defer f.Close()
 			fi, err := f.Stat()
 			if err != nil {
 				log.Println(err)
 				continue
+			}
+			isExecutable := (fi.Mode() & 0100) != 0
+			if isExecutable {
+				numExecutables++
 			}
 			hdr, err := tar.FileInfoHeader(fi, "")
 			if err != nil {
@@ -159,7 +165,12 @@ func Publish(target Target) error {
 				log.Println(err)
 				continue
 			}
+			log.Println("copied", path)
 		}
+	}
+	if numExecutables == 0 {
+		fmt.Println("No executables were found")
+		return nil
 	}
 	err = tarInput.Close()
 	if err != nil {
@@ -178,7 +189,12 @@ func Publish(target Target) error {
 		return pushError
 	}
 
-	return p.PushVersion(provider.Version{Name: uid, Time: time.Now()})
+	err = p.PushVersion(provider.Version{Name: uid, Time: time.Now()})
+	if err != nil {
+		return err
+	}
+	fmt.Println("Deployed")
+	return nil
 }
 
 func Watch(service string) {
@@ -188,6 +204,7 @@ func Watch(service string) {
 	}
 
 	var currentVersion provider.Version
+	var spawned *os.Process
 	for {
 		v, err := p.GetCurrentVersion()
 		if err != nil {
@@ -199,10 +216,28 @@ func Watch(service string) {
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		err = download(p, v)
+		exe, err := download(p, v)
 		if err != nil {
 			log.Println(err)
 		} else {
+			if spawned != nil {
+				spawned.Signal(os.Interrupt)
+				time.Sleep(time.Second)
+				spawned.Kill()
+			}
+			time.Sleep(time.Second)
+			fmt.Println("eee", exe)
+			wd, err := os.Getwd()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			spawned, err = os.StartProcess(path.Join(wd, exe), []string{exe}, &os.ProcAttr{Dir: path.Dir(exe),
+				Files: []*os.File{os.Stdin, os.Stdout, os.Stderr}})
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 			currentVersion = v
 		}
 		time.Sleep(5 * time.Second)
@@ -219,10 +254,11 @@ func Download(service string) error {
 	if err != nil {
 		return err
 	}
-	return download(p, v)
+	_, err = download(p, v)
+	return err
 }
 
-func download(p provider.Provider, v provider.Version) error {
+func download(p provider.Provider, v provider.Version) (string, error) {
 	gzipInput, s3Output := io.Pipe()
 	var barrier sync.WaitGroup
 	barrier.Add(1)
@@ -235,7 +271,7 @@ func download(p provider.Provider, v provider.Version) error {
 
 	gzipOutput, err := gzip.NewReader(gzipInput)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	tarReader := tar.NewReader(gzipOutput)
@@ -243,29 +279,35 @@ func download(p provider.Provider, v provider.Version) error {
 	folder := "assets/" + v.Name + "/"
 	err = os.MkdirAll(folder, 0770)
 	if err != nil {
-		return err
+		return "", err
 	}
+	var executableFilepath string
 	for {
 		h, err := tarReader.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return err
+			return "", err
 		}
-		fmt.Println(h)
-		f, err := os.Create(folder + h.Name)
+		fmt.Println(h.Name, os.FileMode(h.Mode))
+		path := folder + h.Name
+		if h.Mode&100 != 0 && executableFilepath == "" {
+			executableFilepath = path
+		}
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(h.Mode))
 		if err != nil {
 			log.Println(err)
 			continue
 		}
+		defer f.Close()
 		io.Copy(f, tarReader)
 	}
 	barrier.Wait()
 	if err2 != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return executableFilepath, nil
 	// Stop
 	// Play
 }

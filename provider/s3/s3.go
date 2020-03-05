@@ -24,7 +24,7 @@ func Create(service string) (provider.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	region, err := s3manager.GetBucketRegion(context.Background(), session.Must(session.NewSession()), bucket, "us-west-2")
+	region, err := s3manager.GetBucketRegion(context.Background(), session.Must(session.NewSession()), bucket, "eu-west-1")
 	if err != nil {
 		return nil, err
 	}
