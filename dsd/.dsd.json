@@ -1,0 +1,10 @@
+{
+	"Targets": {
+		"dev": {
+			"Service": "s3://dsd-s3-test/manual2",
+			"Patterns": [
+				"dsd"
+			]
+		}
+	}
+}
