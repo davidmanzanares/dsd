@@ -55,7 +55,6 @@ func (s *S3) PushVersion(v provider.Version) error {
 
 func (s *S3) get(path string, writer io.Writer) error {
 	bucket, key, err := parseURL(s.path + path)
-	fmt.Println(path)
 	if err != nil {
 		return err
 	}
