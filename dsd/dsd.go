@@ -19,13 +19,10 @@ func main() {
 		Long:  `Adds a new target to deploy, a target is composed by its name, its service URL and a list of glob patterns.`,
 		Args:  cobra.MinimumNArgs(3),
 		Run: func(cmd *cobra.Command, args []string) {
-			conf, err := dsdl.LoadConfig()
 			target := dsdl.Target{Name: args[0], Service: args[1], Patterns: args[2:]}
-			conf.Targets[target.Name] = &target
-			err = dsdl.SaveConfig(conf)
+			err := dsdl.AddTarget(target)
 			if err != nil {
 				log.Println(err)
-				return
 			}
 			fmt.Printf("Target %s added\n", target)
 		},

@@ -11,18 +11,21 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	log.SetFlags(log.Lshortfile)
 	code := m.Run()
 	deleteTestAssets()
 	os.RemoveAll("./assets")
 	os.Exit(code)
 }
 
+var testPatterns []string = []string{"test-asset*", "*/*", "*/*/*"}
+
 func TestDeployDownload(t *testing.T) {
 	createTestAssets()
 	defer deleteTestAssets()
 
 	service := "s3://dsd-s3-test/tests"
-	v, err := Deploy(Target{Name: "test", Service: service, Patterns: []string{"test-asset*"}})
+	v, err := Deploy(Target{Name: "test", Service: service, Patterns: testPatterns})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,19 +36,6 @@ func TestDeployDownload(t *testing.T) {
 	checkFiles(v, t)
 }
 
-func checkFiles(v provider.Version, t *testing.T) {
-	checkFile := func(filename string, expected string) {
-		d, err := ioutil.ReadFile("./assets/" + v.Name + "/" + filename)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(d) != expected {
-			t.Fatal("test-script-output unexpected result:", string(d), d, []byte(expected))
-		}
-	}
-	checkFile("test-asset-1", "AssetA")
-	checkFile("test-asset-2", "AssetB")
-}
 func checkExecution(v provider.Version, t *testing.T) {
 	d, err := ioutil.ReadFile("./assets/" + v.Name + "/test-script-output")
 	if err != nil {
@@ -62,7 +52,7 @@ func TestDeployWatch(t *testing.T) {
 	defer deleteTestAssets()
 
 	service := "s3://dsd-s3-test/tests"
-	v, err := Deploy(Target{Name: "test", Service: service, Patterns: []string{"test-asset*"}})
+	v, err := Deploy(Target{Name: "test", Service: service, Patterns: testPatterns})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +62,7 @@ func TestDeployWatch(t *testing.T) {
 	checkFiles(v, t)
 	time.Sleep(100 * time.Millisecond)
 	checkExecution(v, t)
-	v, err = Deploy(Target{Name: "test", Service: service, Patterns: []string{"test-asset*"}})
+	v, err = Deploy(Target{Name: "test", Service: service, Patterns: testPatterns})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,18 +87,34 @@ func TestDeployFailureNoExecutable(t *testing.T) {
 
 func TestDeployServiceFailure(t *testing.T) {
 	service := "s3://dsd-s3-test-invalid/tests"
-	_, err := Deploy(Target{Name: "test", Service: service, Patterns: []string{"test-asset*"}})
+	_, err := Deploy(Target{Name: "test", Service: service, Patterns: testPatterns})
 	if err == nil {
 		t.Fatal("Deploy should fail when the service URL is invalid")
 	}
 }
 
 func createTestAssets() {
-	err := ioutil.WriteFile("test-asset-1", []byte("AssetA"), 0660)
+	err := os.MkdirAll("test-asset-folder", 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll("test-asset-folder/folder2", 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ioutil.WriteFile("test-asset-1", []byte("AssetA"), 0660)
 	if err != nil {
 		log.Fatal(err)
 	}
 	err = ioutil.WriteFile("test-asset-2", []byte("AssetB"), 0660)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ioutil.WriteFile("test-asset-folder/test-asset-3", []byte("AssetC"), 0660)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ioutil.WriteFile("test-asset-folder/folder2/test-asset-4", []byte("AssetD"), 0660)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +127,24 @@ func createTestAssets() {
 	}
 }
 
+func checkFiles(v provider.Version, t *testing.T) {
+	checkFile := func(filename string, expected string) {
+		d, err := ioutil.ReadFile("./assets/" + v.Name + "/" + filename)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(d) != expected {
+			t.Fatal("test-script-output unexpected result:", string(d), d, []byte(expected))
+		}
+	}
+	checkFile("test-asset-1", "AssetA")
+	checkFile("test-asset-2", "AssetB")
+	checkFile("test-asset-folder/test-asset-3", "AssetC")
+	checkFile("test-asset-folder/folder2/test-asset-4", "AssetD")
+}
+
 func deleteTestAssets() {
+	os.RemoveAll("test-asset-folder")
 	os.Remove("test-asset-1")
 	os.Remove("test-asset-2")
 	os.Remove("test-asset-script")

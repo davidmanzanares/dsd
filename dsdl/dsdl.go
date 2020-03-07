@@ -22,16 +22,6 @@ import (
 	"github.com/davidmanzanares/dsd/provider/s3"
 )
 
-type Config struct {
-	Targets map[string]*Target
-}
-
-type Target struct {
-	Name     string `json:"-"`
-	Service  string
-	Patterns []string
-}
-
 func (t Target) String() string {
 	var patterns []string
 	for _, p := range t.Patterns {
