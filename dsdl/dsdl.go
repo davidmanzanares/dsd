@@ -63,14 +63,36 @@ func Deploy(target Target) (provider.Version, error) {
 		barrier.Done()
 	}()
 
+	folders := make(map[string]bool)
+
 	numExecutables := 0
 	for _, p := range target.Patterns {
 		matches, err := filepath.Glob(p)
 		if err != nil {
 			return provider.Version{}, err
 		}
-		for _, path := range matches {
-			f, err := os.Open(path)
+		for _, filepath := range matches {
+			func() {
+				dir := path.Dir(filepath)
+				for dir != "." {
+					if !folders[dir] {
+						folders[dir] = true
+						fi, err := os.Stat(dir)
+						if err != nil {
+							hdr, err := tar.FileInfoHeader(fi, "")
+							if err != nil {
+								log.Println(err)
+							} else {
+								defer tarInput.WriteHeader(hdr)
+							}
+						} else {
+							log.Println(err)
+						}
+					}
+					dir = path.Dir(filepath)
+				}
+			}()
+			f, err := os.Open(filepath)
 			if err != nil {
 				log.Println(err)
 				continue
@@ -81,6 +103,7 @@ func Deploy(target Target) (provider.Version, error) {
 				log.Println(err)
 				continue
 			}
+
 			isExecutable := (fi.Mode() & 0100) != 0
 			if isExecutable {
 				numExecutables++
@@ -90,7 +113,7 @@ func Deploy(target Target) (provider.Version, error) {
 				log.Println(err)
 				continue
 			}
-			hdr.Name = path
+			hdr.Name = filepath
 			tarInput.WriteHeader(hdr)
 			_, err = io.Copy(tarInput, f)
 			if err != nil {
@@ -258,11 +281,17 @@ func download(p provider.Provider, v provider.Version) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		path := folder + h.Name
-		if h.Mode&0100 != 0 && executableFilepath == "" {
-			executableFilepath = path
+		filepath := folder + h.Name
+
+		if h.FileInfo().IsDir() {
+			os.Mkdir(filepath, h.FileInfo().Mode().Perm())
 		}
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(h.Mode))
+
+		if h.Mode&0100 != 0 && executableFilepath == "" {
+			executableFilepath = filepath
+		}
+
+		f, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(h.Mode))
 		if err != nil {
 			log.Println(err)
 			continue
