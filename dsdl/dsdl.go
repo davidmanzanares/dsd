@@ -73,23 +73,28 @@ func Deploy(target Target) (provider.Version, error) {
 		}
 		for _, filepath := range matches {
 			func() {
-				dir := path.Dir(filepath)
-				for dir != "." {
+				dir := path.Dir("./" + filepath)
+
+				for i := 0; dir != "."; i++ {
+					if i == 1000 {
+						panic(i)
+					}
 					if !folders[dir] {
 						folders[dir] = true
 						fi, err := os.Stat(dir)
-						if err != nil {
+						if err == nil {
 							hdr, err := tar.FileInfoHeader(fi, "")
 							if err != nil {
 								log.Println(err)
 							} else {
+								hdr.Name = dir
 								defer tarInput.WriteHeader(hdr)
 							}
 						} else {
 							log.Println(err)
 						}
 					}
-					dir = path.Dir(filepath)
+					dir = path.Dir(dir)
 				}
 			}()
 			f, err := os.Open(filepath)
@@ -101,6 +106,9 @@ func Deploy(target Target) (provider.Version, error) {
 			fi, err := f.Stat()
 			if err != nil {
 				log.Println(err)
+				continue
+			}
+			if fi.IsDir() {
 				continue
 			}
 
@@ -285,6 +293,7 @@ func download(p provider.Provider, v provider.Version) (string, error) {
 
 		if h.FileInfo().IsDir() {
 			os.Mkdir(filepath, h.FileInfo().Mode().Perm())
+			continue
 		}
 
 		if h.Mode&0100 != 0 && executableFilepath == "" {
