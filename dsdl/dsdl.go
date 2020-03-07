@@ -130,6 +130,7 @@ func Deploy(target Target) (provider.Version, error) {
 type Watcher struct {
 	shouldContinue chan bool
 	stopped        chan bool
+	ExitCode       chan int
 }
 
 func (w *Watcher) Poll() {
@@ -146,7 +147,7 @@ func Watch(service string, args []string) *Watcher {
 		log.Fatal(err)
 	}
 
-	w := &Watcher{shouldContinue: make(chan bool), stopped: make(chan bool)}
+	w := &Watcher{shouldContinue: make(chan bool), stopped: make(chan bool), ExitCode: make(chan int)}
 	go func() {
 		var currentVersion provider.Version
 		var spawned *os.Process
@@ -179,6 +180,11 @@ func Watch(service string, args []string) *Watcher {
 					log.Println(err)
 					return
 				}
+				go func(ch chan int) {
+					state, _ := spawned.Wait()
+					ch <- state.ExitCode()
+				}(w.ExitCode)
+
 				currentVersion = v
 			}
 		}
