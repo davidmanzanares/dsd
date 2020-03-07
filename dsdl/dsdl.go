@@ -62,6 +62,7 @@ func Deploy(target Target) (provider.Version, error) {
 		pushError = p.PushAsset(uid+".tar.gz", providerInput)
 		barrier.Done()
 	}()
+
 	numExecutables := 0
 	for _, p := range target.Patterns {
 		matches, err := filepath.Glob(p)
@@ -89,6 +90,7 @@ func Deploy(target Target) (provider.Version, error) {
 				log.Println(err)
 				continue
 			}
+			hdr.Name = path
 			tarInput.WriteHeader(hdr)
 			_, err = io.Copy(tarInput, f)
 			if err != nil {
