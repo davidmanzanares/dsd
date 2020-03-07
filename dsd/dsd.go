@@ -72,6 +72,7 @@ func main() {
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			dsdl.Watch(args[0], args[1:])
+			select {}
 		},
 	}
 	rootCmd.AddCommand(cmdWatch)
