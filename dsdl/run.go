@@ -81,12 +81,7 @@ func Run(service string, conf RunConf) (*Runner, error) {
 	return r, nil
 }
 
-// Wait waits till the runner's application exits
-// returning the application's exit code
-//
-// If AutoUpdate was set to true, the application
-// may be interrupted/killed multiple times and restarted automatically
-//
+// WaitForEvent waits for the generation of the next RunEvent
 func (r *Runner) WaitForEvent() RunEvent {
 	ev, ok := <-r.events
 	if !ok {
@@ -96,8 +91,8 @@ func (r *Runner) WaitForEvent() RunEvent {
 }
 
 // Stop stops the current runner, interrupting/killing the application
-func (w *Runner) Stop() {
-	w.commands <- "stop"
+func (r *Runner) Stop() {
+	r.commands <- "stop"
 }
 
 func (r *Runner) manager() {
@@ -143,8 +138,9 @@ func (r *Runner) manager() {
 }
 func (r *Runner) kill() {
 	if r.spawned != nil {
+		// TODO call Interrupt first
 		//r.spawned.Signal(os.Interrupt)
-		time.Sleep(time.Second)
+		//time.Sleep(time.Second)
 
 		pgid, err := syscall.Getpgid(r.spawned.Pid)
 		if err == nil {
