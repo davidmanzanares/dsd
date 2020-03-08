@@ -8,12 +8,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/davidmanzanares/dsd/provider"
-	"github.com/davidmanzanares/dsd/provider/s3"
+	"github.com/davidmanzanares/dsd/types"
 )
 
 func Download(service string) error {
-	p, err := s3.Create(service)
+	p, err := getProviderFromService(service)
 	if err != nil {
 		return err
 	}
@@ -26,7 +25,7 @@ func Download(service string) error {
 	return err
 }
 
-func download(p provider.Provider, v provider.Version) (string, error) {
+func download(p types.Provider, v types.Version) (string, error) {
 	gzipInput, s3Output := io.Pipe()
 	var barrier sync.WaitGroup
 	barrier.Add(1)
@@ -82,6 +81,4 @@ func download(p provider.Provider, v provider.Version) (string, error) {
 		return "", err
 	}
 	return executableFilepath, nil
-	// Stop
-	// Play
 }

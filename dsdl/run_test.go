@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davidmanzanares/dsd/provider"
+	"github.com/davidmanzanares/dsd/types"
 )
 
 var testPatterns []string = []string{"test-asset*", "*/*", "*/*/*"}
@@ -83,7 +83,7 @@ func TestRunFailureRestart(t *testing.T) {
 		if ev.Type == Stopped {
 			break
 		}
-		if ev.Type == AppStarted {
+		if ev.Type == AppExit {
 			execs++
 		}
 	}
@@ -100,7 +100,7 @@ func TestRunHotReload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := Run("s3://dsd-s3-test/tests", RunConf{HotReload: true})
+	r, err := Run("s3://dsd-s3-test/tests", RunConf{HotReload: true, Polling: 50 * time.Millisecond})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,6 @@ func TestRunHotReload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.commands <- "update"
 	ev = r.WaitForEvent()
 	if ev.Type != AppStarted {
 		t.Fatal(ev)
@@ -173,7 +172,28 @@ func TestRunSuccessWait(t *testing.T) {
 	}
 }
 
-func checkExecution(t *testing.T, v provider.Version, executionTimes int) {
+func TestDefaultPolling(t *testing.T) {
+	r, err := Run("s3://dsd-s3-test/tests", RunConf{OnSuccess: Wait})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.conf.Polling != DefaultPolling {
+		t.Fatal("Wrong polling time")
+	}
+	r.Stop()
+}
+func TestCustomPolling(t *testing.T) {
+	r, err := Run("s3://dsd-s3-test/tests", RunConf{OnSuccess: Wait, Polling: time.Minute})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.conf.Polling != time.Minute {
+		t.Fatal("Wrong polling time")
+	}
+	r.Stop()
+}
+
+func checkExecution(t *testing.T, v types.Version, executionTimes int) {
 	d, err := ioutil.ReadFile("./assets/test-script-output")
 	if err != nil {
 		_, file, no, ok := runtime.Caller(1)

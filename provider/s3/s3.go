@@ -3,7 +3,7 @@ package s3
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"strings"
 
@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/davidmanzanares/dsd/provider"
+	"github.com/davidmanzanares/dsd/types"
 )
 
 type S3 struct {
@@ -19,7 +19,7 @@ type S3 struct {
 	region string
 }
 
-func Create(service string) (provider.Provider, error) {
+func Create(service string) (types.Provider, error) {
 	bucket, _, err := parseURL(service)
 	if err != nil {
 		return nil, err
@@ -39,13 +39,13 @@ func (s *S3) PushAsset(name string, reader io.Reader) error {
 	return s.push("/assets/"+name, reader)
 }
 
-func (s *S3) GetCurrentVersion() (provider.Version, error) {
+func (s *S3) GetCurrentVersion() (types.Version, error) {
 	buffer := bytes.NewBuffer(nil)
 	s.get("/VERSION", buffer)
-	return provider.UnserializeVersion(buffer.Bytes())
+	return types.UnserializeVersion(buffer.Bytes())
 }
 
-func (s *S3) PushVersion(v provider.Version) error {
+func (s *S3) PushVersion(v types.Version) error {
 	buff, err := v.Serialize()
 	if err != nil {
 		return err
@@ -98,14 +98,16 @@ func (s *S3) push(name string, reader io.Reader) error {
 	return nil
 }
 
+var invalidURL error = errors.New("S3 service must begin with s3://")
+
 func parseURL(s string) (bucket string, key string, err error) {
 	if !strings.HasPrefix(s, "s3://") {
-		return "", "", fmt.Errorf("S3 service must begin with s3://, not with %s", s)
+		return "", "", invalidURL
 	}
 	s = s[len("s3://"):]
 	parts := strings.SplitN(s, "/", 2)
 	if len(parts) == 1 {
-		parts = append(parts, "/")
+		parts = append(parts, "")
 	}
 	bucket = parts[0]
 	key = parts[1]

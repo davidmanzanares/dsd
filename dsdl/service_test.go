@@ -2,10 +2,15 @@ package dsdl
 
 import "testing"
 
-func TestDeployServiceFailure(t *testing.T) {
-	service := "s3://dsd-s3-test-invalid/tests"
-	_, err := Deploy(Target{Name: "test", Service: service, Patterns: testPatterns})
+func TestGetProviderFromService(t *testing.T) {
+	_, err := getProviderFromService("s3://dsd-s3-test/tests")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+func TestGetProviderFromServiceInvalid(t *testing.T) {
+	_, err := getProviderFromService("invalid://dsd-s3-test/tests")
 	if err == nil {
-		t.Fatal("Deploy should fail when the service URL is invalid")
+		t.Fatal("Expected error")
 	}
 }

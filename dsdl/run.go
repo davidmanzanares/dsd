@@ -8,8 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/davidmanzanares/dsd/provider"
-	"github.com/davidmanzanares/dsd/provider/s3"
+	"github.com/davidmanzanares/dsd/types"
 )
 
 type RunConf struct {
@@ -17,7 +16,10 @@ type RunConf struct {
 	HotReload bool
 	OnSuccess RunReaction
 	OnFailure RunReaction
+	Polling   time.Duration
 }
+
+const DefaultPolling = 5 * time.Second
 
 type RunReaction int
 
@@ -32,15 +34,15 @@ type Runner struct {
 	commands chan string
 
 	conf           RunConf
-	provider       provider.Provider
-	currentVersion provider.Version
+	provider       types.Provider
+	currentVersion types.Version
 	appExe         string
 	spawned        *os.Process
 	exit           chan exitType
 }
 type exitType struct {
 	code int
-	v    provider.Version
+	v    types.Version
 }
 
 type RunEventType int
@@ -53,7 +55,7 @@ const (
 
 type RunEvent struct {
 	Type     RunEventType
-	Version  provider.Version
+	Version  types.Version
 	ExitCode int
 }
 
@@ -70,9 +72,13 @@ func (e RunEvent) String() string {
 }
 
 func Run(service string, conf RunConf) (*Runner, error) {
-	p, err := s3.Create(service)
+	p, err := getProviderFromService(service)
 	if err != nil {
 		return nil, err
+	}
+
+	if conf.Polling == 0 {
+		conf.Polling = DefaultPolling
 	}
 
 	r := &Runner{events: make(chan RunEvent, 10), commands: make(chan string, 10), provider: p, conf: conf}
@@ -119,7 +125,7 @@ func (r *Runner) manager() {
 					r.exit = nil
 				}
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(r.conf.Polling):
 			if r.conf.HotReload || r.spawned == nil {
 				r.update()
 			}
@@ -191,7 +197,7 @@ func (r *Runner) run() {
 	}
 	r.events <- RunEvent{Type: AppStarted, Version: r.currentVersion}
 	r.exit = make(chan exitType)
-	go func(spawned *os.Process, v provider.Version, exitCh chan exitType) {
+	go func(spawned *os.Process, v types.Version, exitCh chan exitType) {
 		state, _ := spawned.Wait()
 		exitCh <- exitType{code: state.ExitCode(), v: v}
 		close(exitCh)

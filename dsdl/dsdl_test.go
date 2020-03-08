@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/davidmanzanares/dsd/provider"
+	"github.com/davidmanzanares/dsd/types"
 )
 
 func TestMain(m *testing.M) {
@@ -63,7 +63,7 @@ func createTestAssets() {
 	}
 }
 
-func checkFiles(v provider.Version, t *testing.T) {
+func checkFiles(v types.Version, t *testing.T) {
 	checkFile := func(filename string, expected string) {
 		d, err := ioutil.ReadFile("./assets/" + v.Name + "/" + filename)
 		if err != nil {

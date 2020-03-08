@@ -13,14 +13,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davidmanzanares/dsd/provider"
-	"github.com/davidmanzanares/dsd/provider/s3"
+	"github.com/davidmanzanares/dsd/types"
 )
 
-func Deploy(target Target) (provider.Version, error) {
-	p, err := s3.Create(target.Service)
+func Deploy(target Target) (types.Version, error) {
+	p, err := getProviderFromService(target.Service)
 	if err != nil {
-		return provider.Version{}, err
+		return types.Version{}, err
 	}
 
 	/*gzipOutput, err := os.Create("out.tar.gzip")
@@ -46,7 +45,7 @@ func Deploy(target Target) (provider.Version, error) {
 	for _, p := range target.Patterns {
 		matches, err := filepath.Glob(p)
 		if err != nil {
-			return provider.Version{}, err
+			return types.Version{}, err
 		}
 		for _, filepath := range matches {
 			func() {
@@ -108,29 +107,29 @@ func Deploy(target Target) (provider.Version, error) {
 		}
 	}
 	if numExecutables == 0 {
-		return provider.Version{}, errors.New("No executables")
+		return types.Version{}, errors.New("No executables")
 	}
 	err = tarInput.Close()
 	if err != nil {
-		return provider.Version{}, err
+		return types.Version{}, err
 	}
 	err = gzipInput.Close()
 	if err != nil {
-		return provider.Version{}, err
+		return types.Version{}, err
 	}
 	gzipOutput.Close()
 	if err != nil {
-		return provider.Version{}, err
+		return types.Version{}, err
 	}
 	barrier.Wait()
 	if pushError != nil {
-		return provider.Version{}, pushError
+		return types.Version{}, pushError
 	}
 
-	v := provider.Version{Name: uid, Time: time.Now()}
+	v := types.Version{Name: uid, Time: time.Now()}
 	err = p.PushVersion(v)
 	if err != nil {
-		return provider.Version{}, err
+		return types.Version{}, err
 	}
 	return v, nil
 }
