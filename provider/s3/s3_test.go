@@ -70,7 +70,7 @@ func TestParseURL3(t *testing.T) {
 	testParseURL("s3://bucket/folder1/folder2", "bucket", "folder1/folder2", nil, t)
 }
 func TestParseURLerror(t *testing.T) {
-	testParseURL("s3", "", "", invalidURL, t)
+	testParseURL("s3", "", "", errInvalidURL, t)
 }
 
 func testParseURL(url, expectedBucket, expectedKey string, expectedError error, t *testing.T) {
