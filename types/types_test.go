@@ -16,6 +16,6 @@ func TestVersionSerialization(t *testing.T) {
 		t.Fatal(err)
 	}
 	if v != v2 {
-		t.Fatal(v2)
+		t.Fatal(v, "!=", v2)
 	}
 }
