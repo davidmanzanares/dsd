@@ -11,7 +11,7 @@ func TestVersionSerialization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	v2, err := UnserializeVersion(b)
+	v2, err := DeserializeVersion(b)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,16 +8,21 @@ import (
 	"strings"
 )
 
+// Config is a set of targets
 type Config struct {
 	Targets map[string]*Target
 }
 
+// Target is a combination of an alias name to deploy,
+// a provider service,
+// and a list of glob patterns
 type Target struct {
 	Name     string `json:"-"`
 	Service  string
 	Patterns []string
 }
 
+// AddTarget loads the config from the default path, adds the new target, and saves the new config file
 func AddTarget(target Target) error {
 	conf, _ := LoadConfig()
 	conf.Targets[target.Name] = &target
@@ -32,6 +37,7 @@ func (t Target) String() string {
 	return fmt.Sprintf("\"%s\" (%s) {%s}", t.Name, t.Service, strings.Join(patterns, ", "))
 }
 
+// LoadConfig loads the config from the default path
 func LoadConfig() (Config, error) {
 	var conf Config
 	conf.Targets = make(map[string]*Target)
@@ -40,7 +46,7 @@ func LoadConfig() (Config, error) {
 		return conf, err
 	}
 	err = json.Unmarshal(buffer, &conf)
-	for k, _ := range conf.Targets {
+	for k := range conf.Targets {
 		conf.Targets[k].Name = k
 	}
 	if err != nil {
@@ -49,6 +55,7 @@ func LoadConfig() (Config, error) {
 	return conf, nil
 }
 
+// SaveConfig saves conf on the default path
 func SaveConfig(conf Config) error {
 	buffer, err := json.MarshalIndent(conf, "", "\t")
 	if err != nil {

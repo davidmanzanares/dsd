@@ -16,6 +16,7 @@ import (
 	"github.com/davidmanzanares/dsd/types"
 )
 
+// Deploy deploys the target patterned matches files to the target provider service
 func Deploy(target Target) (types.Version, error) {
 	p, err := getProviderFromService(target.Service)
 	if err != nil {

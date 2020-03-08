@@ -11,6 +11,7 @@ import (
 	"github.com/davidmanzanares/dsd/types"
 )
 
+// Download the assets deployed on service
 func Download(service string) error {
 	p, err := getProviderFromService(service)
 	if err != nil {

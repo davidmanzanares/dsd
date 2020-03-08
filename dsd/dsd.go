@@ -125,5 +125,5 @@ func getReaction(s string) (dsdl.RunReaction, error) {
 	if s == "exit" {
 		return dsdl.Exit, nil
 	}
-	return dsdl.Exit, fmt.Errorf(`Invalid reaction (%s). Valid values are: "restart", "wait", "exit".`, s)
+	return dsdl.Exit, fmt.Errorf(`invalid reaction (%s). Valid values are: "restart", "wait", "exit"`, s)
 }

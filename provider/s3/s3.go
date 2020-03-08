@@ -42,7 +42,7 @@ func (s *S3) PushAsset(name string, reader io.Reader) error {
 func (s *S3) GetCurrentVersion() (types.Version, error) {
 	buffer := bytes.NewBuffer(nil)
 	s.get("/VERSION", buffer)
-	return types.UnserializeVersion(buffer.Bytes())
+	return types.DeserializeVersion(buffer.Bytes())
 }
 
 func (s *S3) PushVersion(v types.Version) error {
@@ -98,11 +98,11 @@ func (s *S3) push(name string, reader io.Reader) error {
 	return nil
 }
 
-var invalidURL error = errors.New("S3 service must begin with s3://")
+var errInvalidURL error = errors.New("S3 service must begin with s3://")
 
 func parseURL(s string) (bucket string, key string, err error) {
 	if !strings.HasPrefix(s, "s3://") {
-		return "", "", invalidURL
+		return "", "", errInvalidURL
 	}
 	s = s[len("s3://"):]
 	parts := strings.SplitN(s, "/", 2)
