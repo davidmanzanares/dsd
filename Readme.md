@@ -1,5 +1,5 @@
 # Dead Simple Deploy
-`dsd` is a simple tool to deploy assets (binary programs, scripts, data) to remote computers.
+`dsd` is a simple tool to deploy assets (binary programs, scripts, data...) to remote computers.
 
 ## Configuring new deployments
 ```
@@ -17,8 +17,28 @@ Deploying to "dev" (s3://myAwesomeBucket/dev/) {"myBinary", "*/*.glsl", "*/*.txt
 Deployed  {2020-03-07T00:13:52Z #e89c69676dfe0659 2020-03-07 01:13:53.536911707 +0100 CET m=+1.529182466}
 ```
 
-## Getting updates (deploys)
+## Running the deployed packages
+
+Run once:
 ```
-$ dsd watch "s3://mydeploybucket/dev"
-Started up version [eb08c683f2c4fba93b31afaac77f9bc556e2a0bf]
+$ dsd run "s3://mydeploybucket/dev"
+AppStarted{v: {2020-03-08T15:36:54Z #46dcf80b9c7cbbd8 2020-03-08 16:36:55.43163728 +0100 CET}}
+```
+
+Run and restart every time the application exits:
+```
+$ dsd run --on-success restart --on-failure restart "s3://mydeploybucket/dev"
+AppStarted{v: {2020-03-08T15:36:54Z #46dcf80b9c7cbbd8 2020-03-08 16:36:55.43163728 +0100 CET}}
+```
+
+Run and restart every time the application exits, restart the application with new updates:
+```
+$ dsd run --on-success restart --on-failure restart --hotreload "s3://mydeploybucket/dev"
+AppStarted{v: {2020-03-08T15:36:54Z #46dcf80b9c7cbbd8 2020-03-08 16:36:55.43163728 +0100 CET}}
+```
+
+Run and start the application again with new updates when the app exits:
+```
+$ dsd run --on-success wait --on-failure wait "s3://mydeploybucket/dev"
+AppStarted{v: {2020-03-08T15:36:54Z #46dcf80b9c7cbbd8 2020-03-08 16:36:55.43163728 +0100 CET}}
 ```
