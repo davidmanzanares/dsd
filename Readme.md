@@ -1,10 +1,20 @@
 # Dead Simple Deploy
 `dsd` is a simple tool to deploy assets (binary programs, scripts, data...) to remote computers.
 
+## Installing
+
+- Install Go: https://golang.org/dl/
+- Clone me: `git clone git@github.com:davidmanzanares/dsd.git`
+- cd to the CLI directory: `cd dsd/dsd`
+- Compile me: `go build`
+- The `dsd` program should have been created
+
+### Installing it on your path
+- Add Go's bin folder to your path: `export PATH=$PATH:$(go env GOPATH)/bin` (see https://golang.org/doc/gopath_code.html)
+- Use `go install` in you `dsd/dsd` folder
+
 ## Configuring new deployments
 ```
-$ dsd init
-dsd configured at /home/david/myCode/myAwesomeProject/
 
 $ dsd add dev "s3://myAwesomeBucket/dev/" "myBinary" "*/*.glsl" "*/*.txt" "*/*.ttf" "*/*.ogg"
 Target "dev" (s3://myAwesomeBucket/dev/) {"myBinary", "*/*.glsl", "*/*.txt", "*/*.ttf", "*/*.ogg"} added
