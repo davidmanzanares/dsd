@@ -6,7 +6,7 @@ import (
 	"syscall"
 )
 
-func runSysProcAttr() syscall.SysProcAttr {
+func runSysProcAttr() *syscall.SysProcAttr {
 	return &syscall.SysProcAttr{Setpgid: true}
 }
 
