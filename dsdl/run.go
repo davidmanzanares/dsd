@@ -187,6 +187,10 @@ func (r *Runner) update() {
 		log.Println(err)
 		return
 	}
+	if exe == "" {
+		log.Println("Error, executable not found")
+		return
+	}
 	r.appExe = exe
 	r.currentVersion = v
 	r.run()
