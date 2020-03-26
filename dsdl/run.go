@@ -70,6 +70,7 @@ type RunEvent struct {
 	Type     RunEventType
 	Version  types.Version
 	ExitCode int
+	Reason   string
 }
 
 func (e RunEvent) String() string {
@@ -124,7 +125,7 @@ func (r *Runner) manager() {
 			r.spawned = nil
 			if exit.code == 0 {
 				if r.conf.OnSuccess == Restart {
-					r.run()
+					r.run("restarted on success")
 				} else if r.conf.OnSuccess == Exit {
 					return
 				} else {
@@ -132,7 +133,7 @@ func (r *Runner) manager() {
 				}
 			} else {
 				if r.conf.OnFailure == Restart {
-					r.run()
+					r.run("restarted on failure")
 				} else if r.conf.OnFailure == Exit {
 					return
 				} else {
@@ -193,10 +194,10 @@ func (r *Runner) update() {
 	}
 	r.appExe = exe
 	r.currentVersion = v
-	r.run()
+	r.run("update")
 }
 
-func (r *Runner) run() {
+func (r *Runner) run(reason string) {
 	r.kill()
 	wd, err := os.Getwd()
 	if err != nil {
@@ -213,7 +214,7 @@ func (r *Runner) run() {
 		log.Println(err)
 		return
 	}
-	r.events <- RunEvent{Type: AppStarted, Version: r.currentVersion}
+	r.events <- RunEvent{Type: AppStarted, Version: r.currentVersion, Reason: reason}
 	r.exit = make(chan exitType)
 	go func(spawned *os.Process, v types.Version, exitCh chan exitType) {
 		state, _ := spawned.Wait()
