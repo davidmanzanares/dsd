@@ -1,16 +1,19 @@
 // +build linux
 package dsdl
 
-import "syscall"
+import (
+	"os"
+	"syscall"
+)
 
 func runSysProcAttr() syscall.SysProcAttr {
 	return &syscall.SysProcAttr{Setpgid: true}
 }
 
 func kill(p *os.Process) error {
-	pgid, err := syscall.Getpgid(r.spawned.Pid)
+	pgid, err := syscall.Getpgid(p.Pid)
 	if err == nil {
-		syscall.Kill(-pgid, 15) // note the minus sign
+		return syscall.Kill(-pgid, 15) // note the minus sign
 	}
 	return err
 }

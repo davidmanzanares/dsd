@@ -162,7 +162,10 @@ func (r *Runner) kill() {
 		//r.spawned.Signal(os.Interrupt)
 		//time.Sleep(time.Second)
 
-		kill(r.spawned)
+		err := kill(r.spawned)
+		if err != nil {
+			log.Println(err)
+		}
 
 		r.spawned = nil
 		for range r.exit {
