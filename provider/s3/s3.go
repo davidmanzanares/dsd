@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 
@@ -42,7 +43,11 @@ func (s *S3) PushAsset(name string, reader io.Reader) error {
 func (s *S3) GetCurrentVersion() (types.Version, error) {
 	buffer := bytes.NewBuffer(nil)
 	s.get("/VERSION", buffer)
-	return types.DeserializeVersion(buffer.Bytes())
+	v, err := types.DeserializeVersion(buffer.Bytes())
+	if err != nil {
+		return v, fmt.Errorf("Error %s\nS3 returned: \"%s\"\n", err.Error(), buffer.String())
+	}
+	return v, err
 }
 
 func (s *S3) PushVersion(v types.Version) error {

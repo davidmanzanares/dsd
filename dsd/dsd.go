@@ -87,7 +87,6 @@ func main() {
 				fmt.Println(err)
 				return
 			}
-
 			r, err := dsdl.Run(args[0], dsdl.RunConf{
 				HotReload: hotreload,
 				OnSuccess: successReaction,
