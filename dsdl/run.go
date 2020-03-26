@@ -180,7 +180,7 @@ func (r *Runner) update() {
 		log.Println(err)
 		return
 	}
-	if v == r.currentVersion {
+	if v.Name == r.currentVersion.Name {
 		return
 	}
 	exe, err := download(r.provider, v)
