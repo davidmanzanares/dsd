@@ -75,7 +75,7 @@ type RunEvent struct {
 
 func (e RunEvent) String() string {
 	if e.Type == AppStarted {
-		return fmt.Sprintf("AppStarted{v: %s}", e.Version)
+		return fmt.Sprintf("AppStarted{Version: %s Reason: %s}", e.Version, e.Reason)
 	} else if e.Type == AppExit {
 		return fmt.Sprintf("AppExit{Version: %s, ExitCode: %d}", e.Version, e.ExitCode)
 	} else if e.Type == Stopped {
