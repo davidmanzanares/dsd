@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -89,7 +90,7 @@ func Deploy(target Target) (types.Version, error) {
 				continue
 			}
 
-			isExecutable := (fi.Mode() & 0100) != 0
+			isExecutable := (fi.Mode()&0100) != 0 || strings.HasSuffix(filepath, ".exe")
 			if isExecutable {
 				numExecutables++
 			}
@@ -97,6 +98,10 @@ func Deploy(target Target) (types.Version, error) {
 			if err != nil {
 				log.Println(err)
 				continue
+			}
+			if strings.HasSuffix(filepath, ".exe") {
+				// Ensure .exe files are exeutable
+				hdr.Mode = hdr.Mode | 0100
 			}
 			hdr.Name = filepath
 			tarInput.WriteHeader(hdr)

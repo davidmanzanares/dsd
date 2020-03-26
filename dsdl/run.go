@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"syscall"
 	"time"
 
 	"github.com/davidmanzanares/dsd/types"
@@ -163,10 +162,7 @@ func (r *Runner) kill() {
 		//r.spawned.Signal(os.Interrupt)
 		//time.Sleep(time.Second)
 
-		pgid, err := syscall.Getpgid(r.spawned.Pid)
-		if err == nil {
-			syscall.Kill(-pgid, 15) // note the minus sign
-		}
+		kill(r.spawned)
 
 		r.spawned = nil
 		for range r.exit {
@@ -205,7 +201,7 @@ func (r *Runner) run() {
 		&os.ProcAttr{
 			Dir:   path.Dir(r.appExe),
 			Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
-			Sys:   &syscall.SysProcAttr{Setpgid: true}})
+			Sys:   runSysProcAttr()})
 	if err != nil {
 		log.Println(err)
 		return
