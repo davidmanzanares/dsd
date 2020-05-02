@@ -29,7 +29,7 @@ func Deploy(target Target) (types.Version, error) {
 		return err
 	}*/
 
-	uid := time.Now().UTC().Format(time.RFC3339) + " #" + hex.EncodeToString(uid())
+	uid := hex.EncodeToString(uid())
 	providerInput, gzipOutput := io.Pipe()
 	gzipInput := gzip.NewWriter(gzipOutput)
 	tarInput := tar.NewWriter(gzipInput)

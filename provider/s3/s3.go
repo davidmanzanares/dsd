@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -42,7 +43,10 @@ func (s *S3) PushAsset(name string, reader io.Reader) error {
 
 func (s *S3) GetCurrentVersion() (types.Version, error) {
 	buffer := bytes.NewBuffer(nil)
-	s.get("/VERSION", buffer)
+	err := s.get("/VERSION", buffer)
+	if err != nil {
+		return types.Version{}, fmt.Errorf("S3 error getting version: %s", err.Error())
+	}
 	v, err := types.DeserializeVersion(buffer.Bytes())
 	if err != nil {
 		return v, fmt.Errorf("Error %s\nS3 returned: \"%s\"\n", err.Error(), buffer.String())
@@ -64,7 +68,7 @@ func (s *S3) get(path string, writer io.Writer) error {
 		return err
 	}
 
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String(s.region)})
+	sess, _ := session.NewSession(&aws.Config{Region: aws.String(s.region), Credentials: credentials.AnonymousCredentials})
 
 	downloader := s3manager.NewDownloader(sess)
 
