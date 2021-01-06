@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -26,7 +25,7 @@ func Create(service string) (types.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	region, err := s3manager.GetBucketRegion(context.Background(), session.Must(session.NewSession()), bucket, "eu-west-1")
+	region, err := s3manager.GetBucketRegion(context.Background(), session.Must(session.NewSession()), bucket, "")
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +67,7 @@ func (s *S3) get(path string, writer io.Writer) error {
 		return err
 	}
 
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String(s.region), Credentials: credentials.AnonymousCredentials})
+	sess, _ := session.NewSession(&aws.Config{Region: aws.String(s.region)})
 
 	downloader := s3manager.NewDownloader(sess)
 
